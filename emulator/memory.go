@@ -40,3 +40,12 @@ func (m *Memory) Opcode(address uint16) (uint16, error) {
 	// compose the bytes into highlow, the high byte being shifting left by 8 bit
 	return high<<8 | low, nil
 }
+
+// load a segment to memory
+func (m *Memory) Load(data []byte) error {
+	if len(data) > MemorySize-ProgramStart {
+		return fmt.Errorf("size exceeds available memory")
+	}
+	copy(m.content[ProgramStart:], data)
+	return nil
+}
