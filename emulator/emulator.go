@@ -8,12 +8,14 @@ import (
 type Emulator struct {
 	Memory  *Memory
 	Display *Display
+	CPU     *CPU
 }
 
 func NewEmulator() *Emulator {
 	return &Emulator{
 		Memory:  &Memory{},
 		Display: &Display{},
+		CPU:     &CPU{},
 	}
 }
 
@@ -29,7 +31,11 @@ func (e *Emulator) Cleanup() {
 func (e *Emulator) Run() error {
 	fmt.Println("Starting Chip8 Emulator")
 	for {
-		err := e.Display.Draw(32, 32)
+		err := e.CPU.ExecuteCycle(e.Memory, e.Display)
+		if err != nil {
+			return err
+		}
+		err = e.Display.Draw()
 		if err != nil {
 			return err
 		}

@@ -30,7 +30,7 @@ func (d *Display) Clear() {
 	}
 }
 
-func (d *Display) Set(x, y int32) error {
+func (d *Display) Set(x, y uint16) error {
 	if x < 0 || x > Width || y < 0 || y > Height {
 		return fmt.Errorf("trying to draw out of screen bounds")
 	}
@@ -38,7 +38,7 @@ func (d *Display) Set(x, y int32) error {
 	return nil
 }
 
-func (d *Display) Draw(x, y int32) error {
+func (d *Display) Draw() error {
 	rl.BeginDrawing()
 	rl.ClearBackground(rl.Black)
 	for i := 0; i < Width; i++ {
