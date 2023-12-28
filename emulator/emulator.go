@@ -15,7 +15,7 @@ func NewEmulator() *Emulator {
 	return &Emulator{
 		Memory:  &Memory{},
 		Display: &Display{},
-		CPU:     &CPU{},
+		CPU:     NewCPU(),
 	}
 }
 

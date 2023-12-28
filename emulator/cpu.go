@@ -2,6 +2,7 @@ package emulator
 
 import (
 	"fmt"
+	"log"
 	"math/rand"
 )
 
@@ -26,7 +27,7 @@ func NewCPU() *CPU {
 	return &CPU{
 		vRegisters: [16]byte{},
 		iRegister:  0,
-		pc:         0,
+		pc:         ProgramStart,
 
 		delayTimer: 0x00,
 		soundTimer: 0x00,
@@ -63,8 +64,10 @@ func (cpu *CPU) decodeAndExecute(opcode uint16, memory *Memory, display *Display
 	y := (opcode & 0x00F0) >> 8 // Extract register index y
 	z := (opcode & 0x000F) >> 8 // Extract the subcommand
 	kk := byte(opcode & 0x00FF) // Extract byte value
-	nnn := opcode & 0x0FFF
-	address := opcode & 0x0FFF
+	n := int(opcode & 0x000F)   // Extract height of the sprite
+	nnn := opcode & 0x0FFF      // Extract three nibble
+	address := opcode & 0x0FFF  // Extract the address
+
 	// Decode based on the opcode
 	switch opcode & 0xF000 {
 	case 0x1000:
@@ -143,8 +146,46 @@ func (cpu *CPU) decodeAndExecute(opcode uint16, memory *Memory, display *Display
 	case 0xC000:
 		cpu.vRegisters[x] = byte(rand.Intn(256)) & kk
 	case 0xD000:
-		// TODO: add sprite displaying
-		display.Set(x, y)
+		// Opcode Dxyn: Display n-byte sprite starting at memory location I at (Vx, Vy)
+		// Set VF = collision
+		vx := int(cpu.vRegisters[x])
+		vy := int(cpu.vRegisters[y])
+
+		// Reset collision flag
+		cpu.vRegisters[0xF] = 0
+		for i := 0; i < n; i++ {
+			// Read a byte from memory
+			spriteByte, err := memory.Read(cpu.iRegister + uint16(i))
+			if err != nil {
+				// TODO: make function return error
+				log.Fatal(err)
+			}
+			// Iterate over each pixel in the byte
+			for j := 0; j < 8; j++ {
+				px := (vx + j) % DisplayWidth
+				py := (vy + i) % DisplayHeight
+				// Check if the pixel is turned on
+				pixelOn := (spriteByte & (0x80 >> j)) != 0
+				// XOR the pixel with the display
+				existingPixel, err := display.Get(uint16(px), uint16(py))
+				if err != nil {
+					// TODO: make this function return an error
+					log.Fatal(err)
+				}
+				newPixel := existingPixel != pixelOn
+
+				// If the pixel is turned off due to XOR, set collision flag
+				if existingPixel && !newPixel {
+					cpu.vRegisters[0xF] = 1
+				}
+
+				err = display.Set(uint16(px), uint16(px), newPixel)
+				if err != nil {
+					// TODO: make this function return an error
+					log.Fatal(err)
+				}
+			}
+		}
 		// TODO: add missing opcodes
 	default:
 		// Unknown opcode, handle or log error

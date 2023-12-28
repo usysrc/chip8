@@ -1,6 +1,9 @@
 package emulator
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 const (
 	MemorySize   = 4096
@@ -34,6 +37,7 @@ func (m *Memory) Opcode(address uint16) (uint16, error) {
 		return 0, fmt.Errorf("address out of bounds")
 	}
 
+	fmt.Println(m.content[address], address)
 	// the opcode is in stored in two bytes, so we need to get both
 	high := uint16(m.content[address])
 	low := uint16(m.content[address+1])
@@ -46,6 +50,10 @@ func (m *Memory) Load(data []byte) error {
 	if len(data) > MemorySize-ProgramStart {
 		return fmt.Errorf("size exceeds available memory")
 	}
-	copy(m.content[ProgramStart:], data)
+	delta := copy(m.content[ProgramStart:], data)
+	if delta == 0 {
+		return fmt.Errorf("nothing loaded into memory")
+	}
+	log.Printf("wrote %d bytes to memory", delta)
 	return nil
 }
